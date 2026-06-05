@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Training outputs
+outputs/
+*.pth
+*.pt
+*.ckpt
+
+# Logs and local environment
+*.log
+.env
+.venv/
+venv/
+
