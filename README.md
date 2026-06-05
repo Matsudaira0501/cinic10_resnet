@@ -1,61 +1,137 @@
-# CINIC-10 ResNet Training
+# CINIC-10 ResNet50 画像分類
 
-This directory is for ResNet-based image classification experiments using the CINIC-10 dataset.
+CINIC-10 の画像を ResNet50 で分類するための実験用ディレクトリです。
 
-Dataset location:
-- `/data/dataset/cinic10`
-- First target: `/data/dataset/cinic10/25cm_straight/0`
+まずは一番簡単だと思われる短いファイバのデータセット、
+`25cm_straight/0` から学習します。
 
-Implemented:
-- `train.py` loads `train/valid/test` with `torchvision.datasets.ImageFolder`
-- ResNet50 is created from `torchvision.models`
-- The final classification layer is replaced for 10 classes
-- Training, validation, checkpoint saving, resume, and test evaluation are included
+## 使用するデータ
 
-## ResNet50 で試す手順
+最初に使うデータ:
 
-- まずは `ResNet50` を `torchvision.models.resnet50(weights=...)` で読み込み
-- 最終層を `nn.Linear(model.fc.in_features, 10)` に書き換える
-- 入力を `Resize(224)` し、`Normalize(mean=[0.485,0.456,0.406], std=[0.229,0.224,0.225])`
-- `train/valid/test` サブディレクトリを用意したデータ構成で `ImageFolder` を使う
-- 学習後は `resnet50_best.pth` を保存して、`test` で精度を確認する
+```text
+/data/dataset/cinic10/25cm_straight/0
+```
 
-### 使い方
+このディレクトリの中は、次の構成になっています。
+
+```text
+25cm_straight/0/
+├── train/
+├── valid/
+└── test/
+```
+
+各フォルダの中には、CINIC-10 の10クラスがあります。
+
+```text
+airplane, automobile, bird, cat, deer, dog, frog, horse, ship, truck
+```
+
+## 実行方法
+
+`train.py` のデフォルト設定は、すでに `25cm_straight/0` を使うようになっています。
 
 ```bash
 cd /home0/matsudairah/cinic10_resnet
-python3 train.py --data-dir /data/dataset/cinic10/25cm_straight/0 --pretrained --epochs 20 --batch-size 64
+python3 train.py --pretrained --epochs 20 --batch-size 64
 ```
 
-- `--data-dir` は `train/valid/test` を含むルートディレクトリ
-- `--pretrained` を指定すると ImageNet 事前学習を利用します
-- `outputs/resnet50_best.pth` に検証精度が最も高いモデルを保存します
-- 各epochの再開用checkpointは `outputs/resnet50_epoch*.pth` に保存します
+`--pretrained` を付けると、ImageNet で事前学習された ResNet50 を使います。
 
-### 学習を再開する
+## 学習で行うこと
+
+`train.py` は次の処理を行います。
+
+- `train/valid/test` を `torchvision.datasets.ImageFolder` で読み込む
+- ResNet50 を作成する
+- 最後の全結合層を10クラス分類用に変更する
+- `train` で学習する
+- `valid` で性能を確認する
+- 最もよいモデルを保存する
+- 最後に `test` で精度を確認する
+
+画像の前処理は次の設定です。
+
+- `Resize(224)`
+- ImageNet と同じ平均・標準偏差で `Normalize`
+
+## 保存されるファイル
+
+学習結果は `outputs/` に保存されます。
+
+```text
+outputs/
+├── resnet50_best.pth
+├── resnet50_epoch1.pth
+├── resnet50_epoch2.pth
+└── ...
+```
+
+`resnet50_best.pth` が、検証データで最も精度が高かったモデルです。
+
+`outputs/` や `.pth` ファイルは GitHub には保存しない設定にしています。
+
+## 学習を再開する
+
+途中から再開したい場合は `--resume` を使います。
+
+例:
 
 ```bash
 python3 train.py \
-  --data-dir /data/dataset/cinic10/25cm_straight/0 \
   --pretrained \
   --epochs 20 \
   --batch-size 64 \
   --resume outputs/resnet50_epoch10.pth
 ```
 
-`--epochs` は最終epoch番号です。例えば `epoch10` から `--epochs 20` で再開すると、11から20epochまで学習します。
+この例では、10 epoch 目のチェックポイントから再開して、
+20 epoch まで学習します。
 
-### 別のデータで試す
+## 別のデータで試す
 
-`/data/dataset/cinic10` 以下には同じ形式のデータがあります。例:
+他のデータセットを使う場合は `--data-dir` を指定します。
+
+例:
 
 ```bash
-python3 train.py --data-dir /data/dataset/cinic10/1000cm_bend/0_R6_23roll --pretrained
 python3 train.py --data-dir /data/dataset/cinic10/50cm_straight/0 --pretrained
-python3 train.py --data-dir /data/dataset/cinic10/500cm_bend/0_R6_11roll --pretrained
 python3 train.py --data-dir /data/dataset/cinic10/100cm_bend/0_R6_1roll --pretrained
+python3 train.py --data-dir /data/dataset/cinic10/1000cm_bend/0_R6_23roll --pretrained
 ```
 
-### 必要な環境
+## 必要な環境
 
-`torch` と `torchvision` が必要です。手元のホスト環境で `ModuleNotFoundError: No module named 'torch'` が出る場合は、PyTorch入りのPython環境またはSingularity/Apptainerコンテナ内で実行してください。
+次のPythonライブラリが必要です。
+
+```text
+torch
+torchvision
+```
+
+もし次のエラーが出る場合は、PyTorch が入っていない環境で実行しています。
+
+```text
+ModuleNotFoundError: No module named 'torch'
+```
+
+その場合は、PyTorch が入った Python 環境またはコンテナ内で実行してください。
+
+## GitHubへの保存
+
+このディレクトリは Git 管理されています。
+
+変更をGitHubへ保存する流れ:
+
+```bash
+git add .
+git commit -m "メッセージ"
+git push
+```
+
+GitHubリポジトリ:
+
+```text
+git@github.com:Matsudaira0501/cinic10_resnet.git
+```
