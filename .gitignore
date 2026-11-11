@@ -14,3 +14,10 @@ outputs/
 .venv/
 venv/
 
+# Local secrets and signing/certificate files
+.env.*
+!.env.example
+*.pem
+*.p12
+*.pfx
+*.key
